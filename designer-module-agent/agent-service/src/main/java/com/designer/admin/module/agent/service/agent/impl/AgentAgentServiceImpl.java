@@ -88,6 +88,18 @@ public class AgentAgentServiceImpl implements AgentAgentService {
     }
 
     @Override
+    public List<AgentVO> listPublished() {
+        List<AgentAgent> list = agentMapper.selectList(new LambdaQueryWrapper<AgentAgent>()
+                .eq(AgentAgent::getStatus, SystemConsts.STATUS_ENABLE)
+                .gt(AgentAgent::getVersion, 0)
+                .orderByDesc(AgentAgent::getId));
+        Map<Long, String> providerNames = loadProviderNames(list);
+        return list.stream()
+                .map(a -> toVo(a, providerNames.get(a.getProviderId())))
+                .toList();
+    }
+
+    @Override
     public AgentVO getById(Long id) {
         AgentAgent agent = require(id);
         String draftJson = draftJsonOf(agent);
@@ -103,6 +115,17 @@ public class AgentAgentServiceImpl implements AgentAgentService {
             applyDraftToVo(vo, draft);
         }
         return vo;
+    }
+
+    @Override
+    public AgentVO getPublishedById(Long id) {
+        AgentAgent agent = requirePublished(id);
+        String providerName = null;
+        if (agent.getProviderId() != null) {
+            AgentProvider p = providerMapper.selectById(agent.getProviderId());
+            providerName = p == null ? null : p.getName();
+        }
+        return toVo(agent, providerName);
     }
 
     @Override
@@ -244,6 +267,60 @@ public class AgentAgentServiceImpl implements AgentAgentService {
     }
 
     @Override
+    public AgentVO enablePublic(Long id) {
+        AgentAgent agent = requirePublished(id);
+        String token = AgentTexts.notBlank(agent.getPublicToken())
+                ? agent.getPublicToken()
+                : newPublicToken();
+        agentMapper.update(null, new LambdaUpdateWrapper<AgentAgent>()
+                .eq(AgentAgent::getId, id)
+                .set(AgentAgent::getPublicEnabled, 1)
+                .set(AgentAgent::getPublicToken, token));
+        return getById(id);
+    }
+
+    @Override
+    public AgentVO disablePublic(Long id) {
+        require(id);
+        agentMapper.update(null, new LambdaUpdateWrapper<AgentAgent>()
+                .eq(AgentAgent::getId, id)
+                .set(AgentAgent::getPublicEnabled, 0)
+                .set(AgentAgent::getPublicToken, ""));
+        return getById(id);
+    }
+
+    @Override
+    public AgentVO rotatePublic(Long id) {
+        AgentAgent agent = requirePublished(id);
+        if (agent.getPublicEnabled() == null || agent.getPublicEnabled() != 1) {
+            throw new BizException("请先开启公开访问");
+        }
+        agentMapper.update(null, new LambdaUpdateWrapper<AgentAgent>()
+                .eq(AgentAgent::getId, id)
+                .set(AgentAgent::getPublicToken, newPublicToken()));
+        return getById(id);
+    }
+
+    @Override
+    public AgentAgent requireByPublicToken(String publicToken) {
+        if (!AgentTexts.notBlank(publicToken)) {
+            throw new BizException("公开链接无效");
+        }
+        AgentAgent agent = agentMapper.selectOne(new LambdaQueryWrapper<AgentAgent>()
+                .eq(AgentAgent::getPublicToken, publicToken.trim())
+                .eq(AgentAgent::getPublicEnabled, 1)
+                .last("LIMIT 1"));
+        if (agent == null) {
+            throw new BizException("公开链接无效或已关闭");
+        }
+        if (!Objects.equals(agent.getStatus(), SystemConsts.STATUS_ENABLE)
+                || agent.getVersion() == null || agent.getVersion() <= 0) {
+            throw new BizException("智能体不可用");
+        }
+        return agent;
+    }
+
+    @Override
     public void applyDraftConfig(AgentAgent agent) {
         if (agent == null) {
             return;
@@ -282,6 +359,22 @@ public class AgentAgentServiceImpl implements AgentAgentService {
 
     private AgentAgent require(Long id) {
         return AgentEntitySupport.require(agentMapper.selectById(id), "智能体不存在");
+    }
+
+    /** 已启用且已发布；开放接口 / 公开链接共用 */
+    private AgentAgent requirePublished(Long id) {
+        AgentAgent agent = require(id);
+        if (!Objects.equals(agent.getStatus(), SystemConsts.STATUS_ENABLE)) {
+            throw new BizException("智能体已停用");
+        }
+        if (agent.getVersion() == null || agent.getVersion() <= 0) {
+            throw new BizException("智能体尚未发布");
+        }
+        return agent;
+    }
+
+    private static String newPublicToken() {
+        return java.util.UUID.randomUUID().toString().replace("-", "");
     }
 
     private AgentAgent toEntity(AgentSaveDTO dto) {
@@ -358,6 +451,8 @@ public class AgentAgentServiceImpl implements AgentAgentService {
         vo.setVersion(e.getVersion());
         vo.setDraftVersion(e.getDraftVersion());
         vo.setHasUnpublished(hasUnpublished(e));
+        vo.setPublicEnabled(e.getPublicEnabled() == null ? 0 : e.getPublicEnabled());
+        vo.setPublicToken(e.getPublicToken() == null ? "" : e.getPublicToken());
         vo.setCreateTime(e.getCreateTime());
         vo.setUpdateTime(e.getUpdateTime());
         return vo;

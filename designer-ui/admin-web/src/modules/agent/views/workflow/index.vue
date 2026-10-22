@@ -47,6 +47,8 @@
         </n-form-item>
       </n-form>
     </Dialog>
+
+    <OpenInvokeDialog v-model:show="invokeVisible" type="workflow" :row="invokeRow" />
   </div>
 </template>
 
@@ -57,6 +59,7 @@ import { NTag, useMessage } from 'naive-ui'
 import {
   CreateOutline,
   GitNetworkOutline,
+  LinkOutline,
   TrashOutline
 } from '@vicons/ionicons5'
 import { hActionBtn, hActionConfirm, hActionGroup } from '@/utils/actionBtn'
@@ -71,6 +74,7 @@ import { useActionLock } from '@/composables/useActionLock'
 import { usePagination } from '@/composables/usePagination'
 import { useBatchDelete } from '@/composables/useBatchDelete'
 import { useUserStore } from '@/store/user'
+import OpenInvokeDialog from '../agent/OpenInvokeDialog.vue'
 
 const router = useRouter()
 const message = useMessage()
@@ -94,6 +98,8 @@ const { handleBatchDelete } = useBatchDelete(pager, deleteWorkflows, {
 const formVisible = ref(false)
 const formSubmitting = ref(false)
 const formRef = ref(null)
+const invokeVisible = ref(false)
+const invokeRow = ref(null)
 const form = reactive({
   id: null,
   name: '',
@@ -186,7 +192,7 @@ const columns = computed(() => [
     title: '操作',
     key: 'actions',
     align: 'right',
-    width: 140,
+    width: 172,
     fixed: 'right',
     render: (row) =>
       hActionGroup(
@@ -207,6 +213,13 @@ const columns = computed(() => [
               disabled: busy(row.id),
               onClick: () => goDesign(row.id)
             }),
+          hActionBtn({
+            tip: '调用',
+            type: 'primary',
+            icon: LinkOutline,
+            disabled: busy(row.id),
+            onClick: () => openInvoke(row)
+          }),
           userStore.hasPerm('agent:workflow:remove') &&
             hActionConfirm({
               tip: '删除',
@@ -220,6 +233,11 @@ const columns = computed(() => [
       )
   }
 ])
+
+function openInvoke(row) {
+  invokeRow.value = row
+  invokeVisible.value = true
+}
 
 async function handleDelete(row) {
   await deleteWorkflows([row.id])

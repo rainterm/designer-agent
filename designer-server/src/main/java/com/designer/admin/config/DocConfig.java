@@ -40,8 +40,14 @@ public class DocConfig {
     /** 前台 Controller 包路径 */
     private static final String SYSTEM_APP_PACKAGE = "com.designer.admin.system.controller.app";
 
+    /** 智能体前台 / 公开嵌入 Controller 包路径 */
+    private static final String AGENT_APP_PACKAGE = "com.designer.admin.module.agent.controller.app";
+
     /** 开放平台 Controller 包路径 */
     private static final String OPEN_PACKAGE = "com.designer.admin.system.controller.open";
+
+    /** 智能体开放接口 Controller 包路径 */
+    private static final String AGENT_OPEN_PACKAGE = "com.designer.admin.module.agent.controller.open";
 
     /**
      * 管理端接口分组：系统管理、示例模块、智能体模块。
@@ -64,7 +70,8 @@ public class DocConfig {
     @Bean("docDocketApp")
     public DocDocket docDocketApp() {
         return newDocDocket("02-前台接口", "Designer Admin 前台接口", "面向 App 端与匿名访客的公开接口")
-                .apis(SYSTEM_APP_PACKAGE);
+                .apis(SYSTEM_APP_PACKAGE)
+                .apis(AGENT_APP_PACKAGE);
     }
 
     /**
@@ -75,7 +82,8 @@ public class DocConfig {
     @Bean("docDocketOpen")
     public DocDocket docDocketOpen() {
         return newDocDocket("03-开放接口", "Designer Admin 开放接口", "供第三方系统调用的 OAuth2 与 OpenAPI 接口")
-                .apis(OPEN_PACKAGE);
+                .apis(OPEN_PACKAGE)
+                .apis(AGENT_OPEN_PACKAGE);
     }
 
     /**

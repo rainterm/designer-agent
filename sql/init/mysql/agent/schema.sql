@@ -219,13 +219,16 @@ CREATE TABLE `agent_agent` (
     `version`          INT           NOT NULL DEFAULT 0 COMMENT '已发布版本号；0=从未发布（草稿态），商店不展示',
     `draft_version`    INT           NOT NULL DEFAULT 1 COMMENT '草稿版本号；大于 version 表示有未发布改动',
     `draft_json`       LONGTEXT      COMMENT '草稿配置快照（完整 AgentSaveDTO JSON）；发布前编辑均写此列，运行读主表正式字段',
+    `public_enabled`   TINYINT       NOT NULL DEFAULT 0 COMMENT '是否发布公开访问链接：1是 0否',
+    `public_token`     VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '公开访问 token；空表示未发布',
     `create_by`        VARCHAR(50)   NOT NULL DEFAULT '',
     `create_time`      DATETIME      DEFAULT NULL,
     `update_by`        VARCHAR(50)   NOT NULL DEFAULT '',
     `update_time`      DATETIME      DEFAULT NULL,
     `deleted`         TINYINT       NOT NULL DEFAULT 0      COMMENT '逻辑删除：0未删除 1已删除',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_agent_agent_code` (`code`, (IF(`deleted` = 0, 0, NULL)))
+    UNIQUE KEY `uk_agent_agent_code` (`code`, (IF(`deleted` = 0, 0, NULL))),
+    UNIQUE KEY `uk_agent_agent_public_token` (`public_token`, (IF(`deleted` = 0 AND `public_token` <> '', 0, NULL)))
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '智能体';
 
 CREATE TABLE `agent_agent_version` (
@@ -255,9 +258,9 @@ CREATE TABLE `agent_session` (
     `message_count`    INT           NOT NULL DEFAULT 0,
     `last_message_at`  DATETIME      DEFAULT NULL,
     `status`           TINYINT       NOT NULL DEFAULT 1,
-    `create_by`        VARCHAR(50)   NOT NULL DEFAULT '',
+    `create_by`        VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '创建人；公开访问为 p:{token}:{visitor}',
     `create_time`      DATETIME      DEFAULT NULL,
-    `update_by`        VARCHAR(50)   NOT NULL DEFAULT '',
+    `update_by`        VARCHAR(64)   NOT NULL DEFAULT '',
     `update_time`      DATETIME      DEFAULT NULL,
     `deleted`         TINYINT       NOT NULL DEFAULT 0      COMMENT '逻辑删除：0未删除 1已删除',
     PRIMARY KEY (`id`),

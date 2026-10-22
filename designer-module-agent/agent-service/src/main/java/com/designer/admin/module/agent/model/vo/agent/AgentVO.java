@@ -106,6 +106,12 @@ public class AgentVO {
     @ApiModelProperty("是否有未发布改动（draft_version > version）")
     private Boolean hasUnpublished;
 
+    @ApiModelProperty("是否已开启公开访问链接：1是 0否")
+    private Integer publicEnabled;
+
+    @ApiModelProperty("公开访问 token（仅管理端返回；未开启为空）")
+    private String publicToken;
+
     @ONodeAttr(format = "yyyy-MM-dd HH:mm:ss")
     @ApiModelProperty("创建时间")
     private LocalDateTime createTime;

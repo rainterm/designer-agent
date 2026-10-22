@@ -25,7 +25,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.designer.admin.common.constant.SystemConsts;
 import com.designer.admin.common.exception.BizException;
 import com.designer.admin.common.util.JsonUtil;
-import com.designer.admin.framework.satoken.LoginHelper;
+import com.designer.admin.framework.satoken.OperatorHelper;
 import com.designer.admin.module.agent.constant.session.AgentMessageRole;
 import com.designer.admin.module.agent.constant.session.AgentSseEvent;
 import com.designer.admin.module.agent.harness.AgentAsyncExecutor;
@@ -113,12 +113,24 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 
     @Override
     public List<SessionVO> listMineByAgent(Long agentId) {
-        return listMineEntities(agentId).stream().map(this::toSessionVo).toList();
+        return listByOwnerEntities(agentId, OperatorHelper.currentOperator()).stream()
+                .map(this::toSessionVo)
+                .toList();
+    }
+
+    @Override
+    public List<SessionVO> listByOwner(Long agentId, String owner) {
+        return listByOwnerEntities(agentId, owner).stream().map(this::toSessionVo).toList();
     }
 
     @Override
     public SessionVO openMine(Long agentId) {
-        List<AgentSession> mine = listMineEntities(agentId);
+        return openByOwner(agentId, OperatorHelper.currentOperator());
+    }
+
+    @Override
+    public SessionVO openByOwner(Long agentId, String owner) {
+        List<AgentSession> mine = listByOwnerEntities(agentId, owner);
         AgentSession withMessages = null;
         AgentSession empty = null;
         for (AgentSession s : mine) {
@@ -143,22 +155,21 @@ public class AgentSessionServiceImpl implements AgentSessionService {
         SessionSaveDTO dto = new SessionSaveDTO();
         dto.setAgentId(agentId);
         dto.setTitle("新会话");
-        return create(dto);
+        return create(dto, owner);
     }
 
-    private List<AgentSession> listMineEntities(Long agentId) {
+    private List<AgentSession> listByOwnerEntities(Long agentId, String owner) {
         if (agentId == null) {
             throw new BizException("智能体ID不能为空");
         }
-        String username = LoginHelper.getUsername();
-        LambdaQueryWrapper<AgentSession> qw = new LambdaQueryWrapper<AgentSession>()
-                .eq(AgentSession::getAgentId, agentId)
-                .orderByDesc(AgentSession::getLastMessageAt)
-                .orderByDesc(AgentSession::getId);
-        if (AgentTexts.notBlank(username)) {
-            qw.eq(AgentSession::getCreateBy, username);
+        if (!AgentTexts.notBlank(owner)) {
+            return List.of();
         }
-        return sessionMapper.selectList(qw);
+        return sessionMapper.selectList(new LambdaQueryWrapper<AgentSession>()
+                .eq(AgentSession::getAgentId, agentId)
+                .eq(AgentSession::getCreateBy, owner.trim())
+                .orderByDesc(AgentSession::getLastMessageAt)
+                .orderByDesc(AgentSession::getId));
     }
 
     /** 调试面板创建的会话（标题「调试」）不参与商店打开复用 */
@@ -172,6 +183,11 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 
     @Override
     public SessionVO create(SessionSaveDTO dto) {
+        return create(dto, null);
+    }
+
+    @Override
+    public SessionVO create(SessionSaveDTO dto, String owner) {
         if (dto.getAgentId() == null) {
             throw new BizException("智能体ID不能为空");
         }
@@ -185,23 +201,38 @@ public class AgentSessionServiceImpl implements AgentSessionService {
         session.setMessageCount(0);
         session.setLastMessageAt(LocalDateTime.now());
         session.setStatus(SystemConsts.STATUS_ENABLE);
+        if (AgentTexts.notBlank(owner)) {
+            session.setCreateBy(owner.trim());
+            session.setUpdateBy(owner.trim());
+        }
         sessionMapper.insert(session);
+        return toSessionVo(session);
+    }
+
+    @Override
+    public SessionVO requireOwned(Long sessionId, String owner) {
+        AgentSession session = require(sessionId);
+        if (!AgentTexts.notBlank(owner) || !owner.trim().equals(session.getCreateBy())) {
+            throw new BizException("会话不存在或无权访问");
+        }
         return toSessionVo(session);
     }
 
     @Override
     @Transaction
     public void removeSessions(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) {
+        removeSessionsByOwner(ids, OperatorHelper.currentOperator());
+    }
+
+    @Override
+    @Transaction
+    public void removeSessionsByOwner(List<Long> ids, String owner) {
+        if (ids == null || ids.isEmpty() || !AgentTexts.notBlank(owner)) {
             return;
         }
-        String username = LoginHelper.getUsername();
-        LambdaQueryWrapper<AgentSession> qw = new LambdaQueryWrapper<AgentSession>()
-                .in(AgentSession::getId, ids);
-        if (AgentTexts.notBlank(username)) {
-            qw.eq(AgentSession::getCreateBy, username);
-        }
-        List<AgentSession> sessions = sessionMapper.selectList(qw);
+        List<AgentSession> sessions = sessionMapper.selectList(new LambdaQueryWrapper<AgentSession>()
+                .in(AgentSession::getId, ids)
+                .eq(AgentSession::getCreateBy, owner.trim()));
         if (sessions == null || sessions.isEmpty()) {
             return;
         }

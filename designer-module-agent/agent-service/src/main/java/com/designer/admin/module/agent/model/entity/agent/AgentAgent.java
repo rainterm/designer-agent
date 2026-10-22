@@ -107,4 +107,10 @@ public class AgentAgent extends BaseEntity {
 
     /** 草稿配置快照（完整 AgentSaveDTO JSON）；保存草稿只写此列，运行读主表正式字段 */
     private String draftJson;
+
+    /** 是否发布公开访问链接：1是 0否 */
+    private Integer publicEnabled;
+
+    /** 公开访问 token；空表示未发布 */
+    private String publicToken;
 }

@@ -90,6 +90,18 @@ export const constantRoutes = [
     }
   },
   {
+    path: '/public/agent/:token',
+    name: 'AgentPublicChat',
+    component: () => import('@/modules/agent/views/public/chat.vue'),
+    meta: {
+      title: '智能体公开对话',
+      public: true,
+      standalone: true,
+      hidden: true,
+      keepAlive: false
+    }
+  },
+  {
     path: '/',
     name: 'RootLayout',
     component: Layout,

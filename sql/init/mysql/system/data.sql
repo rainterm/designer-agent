@@ -149,7 +149,10 @@ INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_name`, `menu_type`, `path`, `co
 
 -- ------------------------- OAuth2 开放 Scope（示例）-------------------------
 INSERT INTO `sys_oauth_scope` (`id`, `scope_code`, `scope_name`, `path_pattern`, `sort`, `status`, `remark`, `create_by`, `create_time`, `update_by`, `update_time`) VALUES
-(1, 'open.ping', '连通性探测', '/open-api/system/ping', 1, 1, '第三方联调示例接口', 'system', NOW(), 'system', NOW());
+(1, 'open.ping', '连通性探测', '/open-api/system/ping', 1, 1, '第三方联调示例接口', 'system', NOW(), 'system', NOW()),
+(2, 'open.agent', '智能体查询', '/open-api/agent/agent/**', 2, 1, '已发布智能体列表与详情', 'system', NOW(), 'system', NOW()),
+(3, 'open.agent.chat', '智能体对话', '/open-api/agent/session/**', 3, 1, '智能体会话与消息（含 SSE）', 'system', NOW(), 'system', NOW()),
+(4, 'open.workflow', '工作流调用', '/open-api/agent/workflow/**', 4, 1, '工作流列表、详情与执行（含 SSE）', 'system', NOW(), 'system', NOW());
 
 -- ------------------------- SSO 客户端（含本地接入示例 sso-demo）-------------------------
 INSERT INTO `sys_sso_client` (`id`, `client_name`, `client_key`, `origin`, `open_url`, `entry_path`, `sort`, `status`, `remark`, `create_by`, `create_time`, `update_by`, `update_time`) VALUES

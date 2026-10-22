@@ -39,12 +39,27 @@ public interface AgentAgentService {
     List<AgentVO> listEnabled();
 
     /**
+     * 已启用且已发布的智能体列表（开放接口）。
+     *
+     * @return 已发布智能体列表
+     */
+    List<AgentVO> listPublished();
+
+    /**
      * 编辑页详情：面向草稿（draft_json 优先）；运行时请用 {@link #requireEntity(Long)} 读已发布字段。
      *
      * @param id 智能体 ID
      * @return 智能体详情（含草稿配置）
      */
     AgentVO getById(Long id);
+
+    /**
+     * 已发布详情（开放接口 / 公开页）：不套草稿；未启用或从未发布时抛错。
+     *
+     * @param id 智能体 ID
+     * @return 已发布配置详情
+     */
+    AgentVO getPublishedById(Long id);
 
     /**
      * 新增智能体。
@@ -123,5 +138,37 @@ public interface AgentAgentService {
      * @param agent 智能体实体副本
      */
     void applyDraftConfig(AgentAgent agent);
+
+    /**
+     * 开启公开访问链接（已启用且已发布才可）。
+     *
+     * @param id 智能体 ID
+     * @return 更新后的智能体（含 publicToken）
+     */
+    AgentVO enablePublic(Long id);
+
+    /**
+     * 关闭公开访问并清空 token（旧链接立即失效）。
+     *
+     * @param id 智能体 ID
+     * @return 更新后的智能体
+     */
+    AgentVO disablePublic(Long id);
+
+    /**
+     * 轮换公开 token（旧链接立即失效）。
+     *
+     * @param id 智能体 ID
+     * @return 更新后的智能体
+     */
+    AgentVO rotatePublic(Long id);
+
+    /**
+     * 按公开 token 加载已启用且已公开的智能体。
+     *
+     * @param publicToken 公开 token
+     * @return 智能体实体
+     */
+    AgentAgent requireByPublicToken(String publicToken);
 
 }

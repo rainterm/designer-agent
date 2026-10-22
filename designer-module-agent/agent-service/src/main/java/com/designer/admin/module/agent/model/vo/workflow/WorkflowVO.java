@@ -34,6 +34,9 @@ public class WorkflowVO {
     @ApiModelProperty("连线列表")
     private List<Map<String, Object>> edges;
 
+    @ApiModelProperty("开始节点入参定义（开放调用 params 的 key）")
+    private List<WorkflowStartInputVO> startInputs;
+
     @ApiModelProperty("nodeCount")
     private int nodeCount;
 

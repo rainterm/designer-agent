@@ -129,4 +129,31 @@ public class AgentAgentController {
     public Result<AgentVO> rollback(@NotNull(message = "ID不能为空") Long id, @Body @Validated AgentRollbackDTO dto) {
         return Result.ok(agentService.rollback(id, dto == null ? null : dto.getVersion()));
     }
+
+    @Put
+    @Mapping("/{id}/public/enable")
+    @OperLog(title = "智能体公开链接", businessType = BusinessType.UPDATE)
+    @SaCheckPermission("agent:agent:publish")
+    @ApiOperation(value = "开启公开访问链接（需已发布）")
+    public Result<AgentVO> enablePublic(@NotNull(message = "ID不能为空") Long id) {
+        return Result.ok(agentService.enablePublic(id));
+    }
+
+    @Put
+    @Mapping("/{id}/public/disable")
+    @OperLog(title = "智能体公开链接", businessType = BusinessType.UPDATE)
+    @SaCheckPermission("agent:agent:publish")
+    @ApiOperation(value = "关闭公开访问链接")
+    public Result<AgentVO> disablePublic(@NotNull(message = "ID不能为空") Long id) {
+        return Result.ok(agentService.disablePublic(id));
+    }
+
+    @Post
+    @Mapping("/{id}/public/rotate")
+    @OperLog(title = "智能体公开链接", businessType = BusinessType.UPDATE)
+    @SaCheckPermission("agent:agent:publish")
+    @ApiOperation(value = "轮换公开访问 token（旧链接失效）")
+    public Result<AgentVO> rotatePublic(@NotNull(message = "ID不能为空") Long id) {
+        return Result.ok(agentService.rotatePublic(id));
+    }
 }

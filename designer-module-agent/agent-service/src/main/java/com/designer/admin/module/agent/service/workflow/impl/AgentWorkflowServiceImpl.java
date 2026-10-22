@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.ibatis.solon.annotation.Db;
@@ -30,10 +31,12 @@ import com.designer.admin.module.agent.model.dto.workflow.WorkflowSaveDTO;
 import com.designer.admin.module.agent.model.entity.workflow.AgentWorkflow;
 import com.designer.admin.module.agent.model.entity.workflow.AgentWorkflowVersion;
 import com.designer.admin.module.agent.model.vo.workflow.WorkflowRunResult;
+import com.designer.admin.module.agent.model.vo.workflow.WorkflowStartInputVO;
 import com.designer.admin.module.agent.model.vo.workflow.WorkflowVO;
 import com.designer.admin.module.agent.model.vo.workflow.WorkflowVersionVO;
 import com.designer.admin.module.agent.service.workflow.AgentWorkflowService;
 import com.designer.admin.module.agent.workflow.AgentWorkflowExecutor;
+import com.designer.admin.module.agent.workflow.AgentWorkflowStartInputs;
 import com.designer.admin.module.agent.workflow.WorkflowRunListener;
 import com.designer.admin.module.agent.util.AgentEntitySupport;
 import com.designer.admin.module.agent.util.AgentJson;
@@ -82,8 +85,24 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
     }
 
     @Override
+    public List<WorkflowVO> listPublished() {
+        return workflowMapper.selectList(new LambdaQueryWrapper<AgentWorkflow>()
+                        .eq(AgentWorkflow::getStatus, SystemConsts.STATUS_ENABLE)
+                        .gt(AgentWorkflow::getVersion, 0)
+                        .orderByDesc(AgentWorkflow::getId))
+                .stream()
+                .map(this::toPublishedSummaryVo)
+                .toList();
+    }
+
+    @Override
     public WorkflowVO getById(Long id) {
         return toVo(require(id));
+    }
+
+    @Override
+    public WorkflowVO getPublishedById(Long id) {
+        return toPublishedVo(requirePublished(id));
     }
 
     @Override
@@ -226,6 +245,15 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
 
     @Override
     public SseEmitter runStream(Long id, Map<String, Object> params, Long agentId) {
+        return startRunStream(id, params, agentId, true);
+    }
+
+    @Override
+    public SseEmitter runPublishedStream(Long id, Map<String, Object> params, Long agentId) {
+        return startRunStream(id, params, agentId, false);
+    }
+
+    private SseEmitter startRunStream(Long id, Map<String, Object> params, Long agentId, boolean useDraft) {
         require(id);
         AtomicBoolean closed = new AtomicBoolean(false);
         final SseEmitter[] box = new SseEmitter[1];
@@ -234,14 +262,14 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
                 .onError(e -> closed.set(true))
                 .onInited(s -> {
                     box[0] = s;
-                    asyncExecutor.execute(() -> doRunStream(s, id, params, agentId, closed));
+                    asyncExecutor.execute(() -> doRunStream(s, id, params, agentId, useDraft, closed));
                 });
         box[0] = emitter;
         return emitter;
     }
 
     private void doRunStream(SseEmitter emitter, Long id, Map<String, Object> params, Long agentId,
-                             AtomicBoolean closed) {
+                             boolean useDraft, AtomicBoolean closed) {
         try {
             WorkflowRunListener listener = new WorkflowRunListener() {
                 @Override
@@ -277,7 +305,7 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
                     AgentSseSupport.safeSend(emitter, closed, AgentSseEvent.ERROR.getCode(), JsonUtil.toJson(m));
                 }
             };
-            WorkflowRunResult result = workflowExecutor.run(id, params, agentId, listener);
+            WorkflowRunResult result = workflowExecutor.run(id, params, agentId, listener, useDraft);
             AgentSseSupport.safeSend(emitter, closed, AgentSseEvent.DONE.getCode(), JsonUtil.toJson(result));
         } catch (Exception e) {
             log.warn("工作流 SSE 试跑失败 id={}: {}", id, e.getMessage());
@@ -312,6 +340,17 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
         return AgentEntitySupport.require(workflowMapper.selectById(id), "工作流不存在");
     }
 
+    private AgentWorkflow requirePublished(Long id) {
+        AgentWorkflow wf = require(id);
+        if (!Objects.equals(wf.getStatus(), SystemConsts.STATUS_ENABLE)) {
+            throw new BizException("工作流已停用");
+        }
+        if (wf.getVersion() == null || wf.getVersion() <= 0) {
+            throw new BizException("工作流尚未发布");
+        }
+        return wf;
+    }
+
     private AgentWorkflow toEntity(WorkflowSaveDTO dto) {
         AgentWorkflow e = new AgentWorkflow();
         e.setId(dto.getId());
@@ -329,6 +368,27 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
         // 编辑/试跑面向草稿：优先草稿列；为空（旧数据）退回正式列
         List<Map<String, Object>> nodes = AgentJson.parseMapList(draftNodesOf(e));
         List<Map<String, Object>> edges = AgentJson.parseMapList(draftEdgesOf(e));
+        return fillWorkflowVo(e, nodes, edges);
+    }
+
+    /** 开放接口列表：不含图，避免泄漏草稿与大图；仍返回开始节点入参 */
+    private WorkflowVO toPublishedSummaryVo(AgentWorkflow e) {
+        List<Map<String, Object>> nodes = AgentJson.parseMapList(e.getNodesJson());
+        WorkflowVO vo = fillWorkflowVo(e, List.of(), List.of());
+        vo.setNodeCount(nodes.size());
+        vo.setStartInputs(toStartInputVos(AgentWorkflowStartInputs.parseFromNodes(nodes)));
+        return vo;
+    }
+
+    /** 开放接口详情：正式 nodes/edges */
+    private WorkflowVO toPublishedVo(AgentWorkflow e) {
+        List<Map<String, Object>> nodes = AgentJson.parseMapList(e.getNodesJson());
+        List<Map<String, Object>> edges = AgentJson.parseMapList(e.getEdgesJson());
+        return fillWorkflowVo(e, nodes, edges);
+    }
+
+    private static WorkflowVO fillWorkflowVo(AgentWorkflow e, List<Map<String, Object>> nodes,
+                                             List<Map<String, Object>> edges) {
         WorkflowVO vo = new WorkflowVO();
         vo.setId(e.getId());
         vo.setName(e.getName());
@@ -336,7 +396,8 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
         vo.setDescription(e.getDescription());
         vo.setNodes(nodes);
         vo.setEdges(edges);
-        vo.setNodeCount(nodes.size());
+        vo.setStartInputs(toStartInputVos(AgentWorkflowStartInputs.parseFromNodes(nodes)));
+        vo.setNodeCount(nodes == null ? 0 : nodes.size());
         vo.setVersion(e.getVersion());
         vo.setDraftVersion(e.getDraftVersion());
         vo.setStatus(e.getStatus());
@@ -344,6 +405,20 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
         vo.setCreateTime(e.getCreateTime());
         vo.setUpdateTime(e.getUpdateTime());
         return vo;
+    }
+
+    private static List<WorkflowStartInputVO> toStartInputVos(List<AgentWorkflowStartInputs.Spec> specs) {
+        if (specs == null || specs.isEmpty()) {
+            return List.of();
+        }
+        return specs.stream().map(s -> {
+            WorkflowStartInputVO vo = new WorkflowStartInputVO();
+            vo.setKey(s.key());
+            vo.setLabel(s.label());
+            vo.setRequired(s.required());
+            vo.setDefaultValue(s.defaultValue() == null ? "" : s.defaultValue());
+            return vo;
+        }).toList();
     }
 
     /** 草稿节点图；为空（未回填的旧数据）时退回已发布图 */

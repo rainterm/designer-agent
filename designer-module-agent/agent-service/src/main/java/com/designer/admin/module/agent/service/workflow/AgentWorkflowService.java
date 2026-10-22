@@ -32,12 +32,27 @@ public interface AgentWorkflowService {
     List<WorkflowVO> listEnabled();
 
     /**
+     * 已启用且已发布的工作流列表（开放接口）。
+     *
+     * @return 已发布工作流列表（不含图）
+     */
+    List<WorkflowVO> listPublished();
+
+    /**
      * 编辑页详情：面向草稿图；运行/试跑读取已发布 nodes_json。
      *
      * @param id 工作流 ID
      * @return 工作流详情（含草稿）
      */
     WorkflowVO getById(Long id);
+
+    /**
+     * 已发布详情（开放接口）：返回正式 nodes/edges，不暴露草稿。
+     *
+     * @param id 工作流 ID
+     * @return 已发布工作流详情
+     */
+    WorkflowVO getPublishedById(Long id);
 
     /**
      * 新增工作流。
@@ -102,7 +117,7 @@ public interface AgentWorkflowService {
     void remove(List<Long> ids);
 
     /**
-     * SSE 试跑：event = status / step / delta / thinking / done / error。
+     * SSE 试跑：event = status / step / delta / thinking / done / error（优先草稿图）。
      *
      * @param id      工作流 ID
      * @param params  开始节点参数，可空
@@ -110,5 +125,15 @@ public interface AgentWorkflowService {
      * @return SSE 发射器
      */
     SseEmitter runStream(Long id, Map<String, Object> params, Long agentId);
+
+    /**
+     * SSE 执行已发布图（开放接口）。
+     *
+     * @param id      工作流 ID
+     * @param params  开始节点参数，可空
+     * @param agentId 可选：借用智能体模型，可空
+     * @return SSE 发射器
+     */
+    SseEmitter runPublishedStream(Long id, Map<String, Object> params, Long agentId);
 
 }

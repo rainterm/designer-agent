@@ -1,8 +1,7 @@
 package com.designer.admin.framework.mybatis;
 
-import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
-import com.designer.admin.framework.satoken.LoginHelper;
+import com.designer.admin.framework.satoken.OperatorHelper;
 import org.apache.ibatis.reflection.MetaObject;
 import org.noear.solon.annotation.Component;
 
@@ -26,7 +25,7 @@ public class AutoFillHandler implements MetaObjectHandler {
     @Override
     public void insertFill(MetaObject metaObject) {
         LocalDateTime now = LocalDateTime.now();
-        String operator = currentUsername();
+        String operator = OperatorHelper.currentOperator();
         this.strictInsertFill(metaObject, CREATE_BY, String.class, operator);
         this.strictInsertFill(metaObject, CREATE_TIME, LocalDateTime.class, now);
         this.strictInsertFill(metaObject, UPDATE_BY, String.class, operator);
@@ -35,20 +34,7 @@ public class AutoFillHandler implements MetaObjectHandler {
 
     @Override
     public void updateFill(MetaObject metaObject) {
-        this.strictUpdateFill(metaObject, UPDATE_BY, String.class, currentUsername());
+        this.strictUpdateFill(metaObject, UPDATE_BY, String.class, OperatorHelper.currentOperator());
         this.strictUpdateFill(metaObject, UPDATE_TIME, LocalDateTime.class, LocalDateTime.now());
-    }
-
-    /** 未登录或无会话时返回空串，避免填充阶段抛异常 */
-    private static String currentUsername() {
-        try {
-            if (!StpUtil.isLogin()) {
-                return "";
-            }
-            String username = LoginHelper.getUsername();
-            return username == null ? "" : username;
-        } catch (Exception e) {
-            return "";
-        }
     }
 }

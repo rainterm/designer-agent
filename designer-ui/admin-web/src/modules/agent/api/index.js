@@ -253,6 +253,128 @@ export const getAgentVersion = (id, version) =>
 /** 回滚到指定版本（覆盖主表草稿，不动 version） */
 export const rollbackAgent = (id, version) =>
   request.post(`/admin-api/agent/agent/${id}/rollback`, { version })
+/** 开启公开访问链接 */
+export const enableAgentPublic = (id) => request.put(`/admin-api/agent/agent/${id}/public/enable`)
+/** 关闭公开访问链接 */
+export const disableAgentPublic = (id) => request.put(`/admin-api/agent/agent/${id}/public/disable`)
+/** 轮换公开访问 token */
+export const rotateAgentPublic = (id) => request.post(`/admin-api/agent/agent/${id}/public/rotate`)
+
+// ---------------------- 公开访问（免登录） ----------------------
+const PUBLIC_VISITOR_KEY = 'agent_public_vid'
+const PUBLIC_VISITOR_HEADER = 'X-Public-Visitor'
+
+function publicVisitorId() {
+  try {
+    let id = localStorage.getItem(PUBLIC_VISITOR_KEY)
+    if (!id) {
+      id = (crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`).replace(/-/g, '').slice(0, 32)
+      localStorage.setItem(PUBLIC_VISITOR_KEY, id)
+    }
+    return id
+  } catch {
+    return 'anon'
+  }
+}
+
+function publicHeaders(extra = {}) {
+  return {
+    ...extra,
+    [PUBLIC_VISITOR_HEADER]: publicVisitorId()
+  }
+}
+
+export const getPublicAgent = (token) =>
+  request.get(`/app-api/agent/public/${token}`, { headers: publicHeaders() })
+export const listPublicSessions = (token) =>
+  request.get(`/app-api/agent/public/${token}/sessions`, { headers: publicHeaders() })
+export const openPublicSession = (token) =>
+  request.post(`/app-api/agent/public/${token}/session`, null, { headers: publicHeaders() })
+export const createPublicSession = (token, data) =>
+  request.post(`/app-api/agent/public/${token}/sessions`, data || { title: '新会话' }, {
+    headers: publicHeaders()
+  })
+export const deletePublicSessions = (token, ids) =>
+  request.delete(`/app-api/agent/public/${token}/sessions`, {
+    params: { ids: ids.join(',') },
+    headers: publicHeaders()
+  })
+export const listPublicMessages = (token, sessionId) =>
+  request.get(`/app-api/agent/public/${token}/sessions/${sessionId}/messages`, {
+    headers: publicHeaders()
+  })
+
+/**
+ * 公开访问 SSE 对话（不带后台登录态）。
+ */
+export async function sendPublicMessageStream(token, sessionId, content, callbacks = {}, signal) {
+  const { onUser, onDelta, onTool, onThinking, onStatus, onDone, onError } = callbacks
+  const base = import.meta.env.VITE_API_BASE || ''
+  const res = await fetch(
+    `${base}/app-api/agent/public/${encodeURIComponent(token)}/sessions/${sessionId}/send-stream`,
+    {
+      method: 'POST',
+      headers: publicHeaders({
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream'
+      }),
+      body: JSON.stringify({ content, useDraft: false }),
+      signal
+    }
+  )
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `流式对话失败 (${res.status})`)
+  }
+  if (!res.body) {
+    throw new Error('浏览器不支持流式响应')
+  }
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder('utf-8')
+  let buffer = ''
+  let donePayload = null
+  const dispatch = (eventName, dataStr) => {
+    let data = dataStr
+    try {
+      data = dataStr ? JSON.parse(dataStr) : null
+    } catch {
+      // keep raw
+    }
+    if (eventName === 'user') onUser?.(data)
+    else if (eventName === 'delta') onDelta?.(data?.delta ?? '')
+    else if (eventName === 'tool') onTool?.(data)
+    else if (eventName === 'thinking') onThinking?.(data?.delta ?? '')
+    else if (eventName === 'status') onStatus?.(data?.status || '')
+    else if (eventName === 'done') {
+      donePayload = data
+      onDone?.(data)
+    } else if (eventName === 'error') onError?.(data?.msg || '对话失败')
+  }
+  const flushBlock = (block) => {
+    if (!block.trim()) return
+    let eventName = 'message'
+    const dataLines = []
+    for (const line of block.split('\n')) {
+      if (line.startsWith('event:')) eventName = line.slice(6).trim()
+      else if (line.startsWith('data:')) dataLines.push(line.slice(5).trimStart())
+    }
+    dispatch(eventName, dataLines.join('\n'))
+  }
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    buffer = buffer.replace(/\r\n/g, '\n')
+    let idx
+    while ((idx = buffer.indexOf('\n\n')) >= 0) {
+      const block = buffer.slice(0, idx)
+      buffer = buffer.slice(idx + 2)
+      flushBlock(block)
+    }
+  }
+  if (buffer.trim()) flushBlock(buffer)
+  return donePayload
+}
 
 // ---------------------- 智能体商店（使用者） ----------------------
 export const pageStoreAgents = (params) => request.get('/admin-api/agent/store/page', { params })

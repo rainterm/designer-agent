@@ -48,13 +48,20 @@
         @missing="editVisible = false"
       />
     </Dialog>
+
+    <OpenInvokeDialog
+      v-model:show="invokeVisible"
+      type="agent"
+      :row="invokeRow"
+      @updated="loadData"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed, h, ref } from 'vue'
 import { NAvatar, NTag, useMessage } from 'naive-ui'
-import { CreateOutline, TrashOutline } from '@vicons/ionicons5'
+import { CreateOutline, LinkOutline, TrashOutline } from '@vicons/ionicons5'
 import { hActionBtn, hActionConfirm, hActionGroup } from '@/utils/actionBtn'
 import { deleteAgents, pageAgents } from '@/modules/agent/api'
 import { useActionLock } from '@/composables/useActionLock'
@@ -62,6 +69,7 @@ import { usePagination } from '@/composables/usePagination'
 import { useBatchDelete } from '@/composables/useBatchDelete'
 import { useUserStore } from '@/store/user'
 import AgentEditForm from './AgentEditForm.vue'
+import OpenInvokeDialog from './OpenInvokeDialog.vue'
 
 const message = useMessage()
 const userStore = useUserStore()
@@ -72,6 +80,8 @@ const editAgentId = ref(null)
 const editFormRef = ref(null)
 const editSaving = ref(false)
 const editTitle = computed(() => (editAgentId.value ? '编辑智能体' : '新建智能体'))
+const invokeVisible = ref(false)
+const invokeRow = ref(null)
 
 const statusOptions = [
   { label: '启用', value: 1 },
@@ -193,7 +203,7 @@ const columns = computed(() => [
     title: '操作',
     key: 'actions',
     align: 'right',
-    width: 100,
+    width: 132,
     fixed: 'right',
     render: (row) =>
       hActionGroup(
@@ -206,6 +216,13 @@ const columns = computed(() => [
               disabled: busy(row.id),
               onClick: () => goEdit(row.id)
             }),
+          hActionBtn({
+            tip: '调用',
+            type: 'primary',
+            icon: LinkOutline,
+            disabled: busy(row.id),
+            onClick: () => openInvoke(row)
+          }),
           userStore.hasPerm('agent:agent:remove') &&
             hActionConfirm({
               tip: '删除',
@@ -219,6 +236,11 @@ const columns = computed(() => [
       )
   }
 ])
+
+function openInvoke(row) {
+  invokeRow.value = row
+  invokeVisible.value = true
+}
 
 function goEdit(id) {
   editAgentId.value = id || null

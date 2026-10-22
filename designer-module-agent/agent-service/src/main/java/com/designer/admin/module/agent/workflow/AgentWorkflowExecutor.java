@@ -69,11 +69,21 @@ public class AgentWorkflowExecutor {
     private AgentWorkflowChatModelSupport chatModelSupport;
 
     public WorkflowRunResult run(Long workflowId, Map<String, Object> params, Long agentId) {
-        return run(workflowId, params, agentId, null);
+        return run(workflowId, params, agentId, null, true);
     }
 
     public WorkflowRunResult run(Long workflowId, Map<String, Object> params, Long agentId,
                                  WorkflowRunListener listener) {
+        return run(workflowId, params, agentId, listener, true);
+    }
+
+    /**
+     * 执行工作流。
+     *
+     * @param useDraft true=管理端试跑（优先草稿图）；false=开放接口（仅已发布正式图）
+     */
+    public WorkflowRunResult run(Long workflowId, Map<String, Object> params, Long agentId,
+                                 WorkflowRunListener listener, boolean useDraft) {
         AgentWorkflow wf = workflowMapper.selectById(workflowId);
         if (wf == null) {
             throw new BizException("工作流不存在");
@@ -81,9 +91,13 @@ public class AgentWorkflowExecutor {
         if (wf.getStatus() != null && wf.getStatus() != SystemConsts.STATUS_ENABLE) {
             throw new BizException("工作流已停用");
         }
-        // 试跑面向草稿：优先草稿图，验证未发布的改动；草稿为空（旧数据）退回正式图
-        wf.setNodesJson(AgentTexts.notBlank(wf.getDraftNodesJson()) ? wf.getDraftNodesJson() : wf.getNodesJson());
-        wf.setEdgesJson(AgentTexts.notBlank(wf.getDraftEdgesJson()) ? wf.getDraftEdgesJson() : wf.getEdgesJson());
+        if (useDraft) {
+            // 试跑面向草稿：优先草稿图，验证未发布的改动；草稿为空（旧数据）退回正式图
+            wf.setNodesJson(AgentTexts.notBlank(wf.getDraftNodesJson()) ? wf.getDraftNodesJson() : wf.getNodesJson());
+            wf.setEdgesJson(AgentTexts.notBlank(wf.getDraftEdgesJson()) ? wf.getDraftEdgesJson() : wf.getEdgesJson());
+        } else if (!AgentTexts.notBlank(wf.getNodesJson())) {
+            throw new BizException("工作流尚未发布");
+        }
         ChatModel chatModel = resolveChatModel(agentId);
         return execute(wf, params, chatModel, listener);
     }
