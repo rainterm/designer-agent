@@ -5,7 +5,7 @@ import com.designer.admin.common.core.Result;
 import com.designer.admin.common.core.ResultCode;
 import com.designer.admin.common.exception.BizException;
 import com.designer.admin.common.util.JsonUtil;
-import com.designer.admin.framework.satoken.StpOauthUtil;
+import com.designer.admin.framework.satoken.StpOAuthUtil;
 import com.designer.admin.system.service.auth.OpenApiScopeGuard;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
@@ -41,7 +41,7 @@ public class OpenApiScopeFilter implements Filter {
         if (path != null && path.startsWith(OPEN_API_PREFIX) && !path.startsWith(OPEN_API_OAUTH2_PREFIX)) {
             try {
                 // Postman 等会带 Bearer 前缀；写入 Storage 后再校验，避免读头失败
-                StpOauthUtil.checkLoginByAuthorization(ctx.header("Authorization"));
+                StpOAuthUtil.checkLoginByAuthorization(ctx.header("Authorization"));
                 scopeGuard.checkCurrentRequest();
             } catch (NotLoginException e) {
                 write(ctx, Result.fail(ResultCode.UNAUTHORIZED, "未授权或 access_token 无效"));

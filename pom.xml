@@ -23,6 +23,7 @@
         <module>designer-framework</module>
         <module>designer-module-system</module>
         <module>designer-module-demo</module>
+        <module>designer-module-agent</module>
         <module>designer-server</module>
     </modules>
 
@@ -44,6 +45,9 @@
         <ip2region.version>2.7.0</ip2region.version>
         <swagger.version>1.6.16</swagger.version>
         <bcrypt.version>0.10.2</bcrypt.version>
+        <!-- Milvus SDK 依赖 protobuf 3.x；mysql-connector-j 9 会拉 4.x 导致 GeneratedMessageV3 缺失 -->
+        <protobuf.version>3.25.5</protobuf.version>
+        <milvus.version>2.5.8</milvus.version>
     </properties>
 
     <dependencyManagement>
@@ -77,6 +81,26 @@
                 <groupId>com.designer</groupId>
                 <artifactId>demo-service</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.designer</groupId>
+                <artifactId>agent-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.designer</groupId>
+                <artifactId>agent-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>${protobuf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.milvus</groupId>
+                <artifactId>milvus-sdk-java</artifactId>
+                <version>${milvus.version}</version>
             </dependency>
 
             <dependency>

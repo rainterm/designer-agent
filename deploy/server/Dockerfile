@@ -13,7 +13,7 @@ WORKDIR /app
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p /app/logs /app/uploads \
+    && mkdir -p /app/logs /app/uploads /app/data/agent-harness \
     && groupadd -r app && useradd -r -g app -d /app -s /sbin/nologin app \
     && chown -R app:app /app
 

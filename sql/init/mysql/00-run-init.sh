@@ -19,7 +19,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SQL_DB_PLACEHOLDER="designer_agent"
 
 # 业务模块目录名（按依赖顺序；不含 _base）
-MODULES=(system demo)
+MODULES=(system demo agent)
 
 # ---------------------------------------------------------------------
 # 收集连接信息

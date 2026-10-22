@@ -64,6 +64,31 @@ export const constantRoutes = [
     component: () => import('@/views/error/sso.vue'),
     meta: { title: '单点登录失败', public: true }
   },
+  /** 独立全屏页：新标签打开、不走后台 Layout（无侧栏/顶栏） */
+  {
+    path: '/agent/workflow/edit',
+    name: 'AgentWorkflowEdit',
+    component: () => import('@/modules/agent/views/workflow/edit.vue'),
+    meta: {
+      title: '工作流设计',
+      standalone: true,
+      hidden: true,
+      keepAlive: false,
+      authPerm: 'agent:workflow:edit'
+    }
+  },
+  {
+    path: '/agent/session/chat',
+    name: 'AgentSessionChat',
+    component: () => import('@/modules/agent/views/session/chat.vue'),
+    meta: {
+      title: '对话',
+      standalone: true,
+      hidden: true,
+      keepAlive: false,
+      authPerm: 'agent:session:chat'
+    }
+  },
   {
     path: '/',
     name: 'RootLayout',

@@ -13,7 +13,7 @@ import java.util.List;
  *
  * @author 雨夜终端
  */
-public final class StpOauthUtil {
+public final class StpOAuthUtil {
 
     /** Authorization 头的 Bearer 前缀 */
     private static final String BEARER_PREFIX = "Bearer ";
@@ -23,7 +23,7 @@ public final class StpOauthUtil {
 
     public static final StpLogic STP = new StpLogic(TYPE);
 
-    private StpOauthUtil() {
+    private StpOAuthUtil() {
     }
 
     public static void login(String clientId, List<String> scopes, long timeoutSeconds) {

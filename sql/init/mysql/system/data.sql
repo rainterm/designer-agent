@@ -228,7 +228,7 @@ INSERT INTO `sys_dict_data` (`dict_type`, `dict_label`, `dict_value`, `sort`, `i
 -- ------------------------- 默认本地存储配置 -------------------------
 INSERT INTO `sys_storage_config` (`id`, `config_name`, `storage_type`, `is_default`, `status`, `is_public`, `url_prefix`, `allowed_extensions`, `max_size`, `compress_enabled`, `compress_quality`, `config_json`, `remark`, `create_by`, `create_time`, `update_by`, `update_time`) VALUES
 (1, '本地默认', 'local', 1, 1, 1, '/app-api/system/file/download/',
- 'jpg,jpeg,png,gif,webp,bmp,pdf,doc,docx,xls,xlsx,ppt,pptx,zip,txt',
+ 'jpg,jpeg,png,gif,webp,bmp,pdf,doc,docx,xls,xlsx,ppt,pptx,zip,txt,md,markdown',
  5242880,
  0, 80,
  '{"localPath":"./data/uploads"}',

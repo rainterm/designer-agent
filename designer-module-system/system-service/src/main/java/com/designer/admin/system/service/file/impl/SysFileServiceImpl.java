@@ -49,7 +49,7 @@ public class SysFileServiceImpl implements SysFileService {
     /** 允许 inline 预览的扩展名；其余一律 attachment，避免 SVG / HTML 在同源下执行脚本 */
     private static final Set<String> INLINE_EXT = Set.of(
             "jpg", "jpeg", "png", "gif", "webp", "bmp", "ico", "avif",
-            "pdf", "txt", "md", "csv", "log",
+            "pdf", "txt", "md", "markdown", "csv", "log",
             "mp3", "wav", "ogg", "mp4", "webm");
 
     /**
@@ -68,6 +68,7 @@ public class SysFileServiceImpl implements SysFileService {
             Map.entry("pdf", "application/pdf"),
             Map.entry("txt", "text/plain; charset=utf-8"),
             Map.entry("md", "text/plain; charset=utf-8"),
+            Map.entry("markdown", "text/plain; charset=utf-8"),
             Map.entry("csv", "text/plain; charset=utf-8"),
             Map.entry("log", "text/plain; charset=utf-8"),
             Map.entry("mp3", "audio/mpeg"),

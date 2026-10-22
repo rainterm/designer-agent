@@ -18,8 +18,18 @@ public class BizException extends RuntimeException {
         this.code = ResultCode.ERROR;
     }
 
+    public BizException(String message, Throwable cause) {
+        super(message, cause);
+        this.code = ResultCode.ERROR;
+    }
+
     public BizException(int code, String message) {
         super(message);
+        this.code = code;
+    }
+
+    public BizException(int code, String message, Throwable cause) {
+        super(message, cause);
         this.code = code;
     }
 }

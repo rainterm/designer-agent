@@ -3,7 +3,7 @@ package com.designer.admin.system.controller.open;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import com.designer.admin.common.core.Result;
-import com.designer.admin.framework.satoken.StpOauthUtil;
+import com.designer.admin.framework.satoken.StpOAuthUtil;
 import com.designer.admin.system.model.vo.open.OpenApiPingVO;
 import org.noear.solon.annotation.Controller;
 import org.noear.solon.annotation.Get;
@@ -25,8 +25,8 @@ public class OpenApiPingController {
     public Result<OpenApiPingVO> ping() {
         return Result.ok(OpenApiPingVO.builder()
                 .ok(true)
-                .clientId(StpOauthUtil.getClientId())
-                .scopes(StpOauthUtil.getScopes())
+                .clientId(StpOAuthUtil.getClientId())
+                .scopes(StpOAuthUtil.getScopes())
                 .serverTime(System.currentTimeMillis())
                 .build());
     }

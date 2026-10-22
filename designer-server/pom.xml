@@ -31,9 +31,25 @@
             <artifactId>demo-service</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.designer</groupId>
+            <artifactId>agent-service</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <scope>runtime</scope>
+            <exclusions>
+                <!-- 4.x 与 Milvus SDK（GeneratedMessageV3）不兼容 -->
+                <exclusion>
+                    <groupId>com.google.protobuf</groupId>
+                    <artifactId>protobuf-java</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- 显式钉死 3.x，供 Milvus / gRPC 使用 -->
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
         </dependency>
         <!-- 接口文档：OpenAPI2 + Knife4j UI（访问 /doc.html） -->
         <dependency>

@@ -343,7 +343,7 @@ public class SysStorageConfigServiceImpl implements SysStorageConfigService, Sto
         entity.setIsPublic(dto.getIsPublic() == null ? 0 : dto.getIsPublic());
         entity.setUrlPrefix(storageProperties.urlPrefix(entity.getIsPublic() == 1));
         entity.setAllowedExtensions(blankToDefault(dto.getAllowedExtensions(),
-                "jpg,jpeg,png,gif,webp,bmp,pdf,doc,docx,xls,xlsx,ppt,pptx,zip,txt"));
+                "jpg,jpeg,png,gif,webp,bmp,pdf,doc,docx,xls,xlsx,ppt,pptx,zip,txt,md,markdown"));
         entity.setMaxSize(dto.getMaxSize() == null || dto.getMaxSize() <= 0 ? 5242880L : dto.getMaxSize());
         entity.setCompressEnabled(dto.getCompressEnabled() != null && dto.getCompressEnabled() == 1 ? 1 : 0);
         entity.setCompressQuality(ImageCompressor.normalizeQuality(dto.getCompressQuality()));

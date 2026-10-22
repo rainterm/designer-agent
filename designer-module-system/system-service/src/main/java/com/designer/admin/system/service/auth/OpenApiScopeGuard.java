@@ -1,7 +1,7 @@
 package com.designer.admin.system.service.auth;
 
 import com.designer.admin.common.exception.BizException;
-import com.designer.admin.framework.satoken.StpOauthUtil;
+import com.designer.admin.framework.satoken.StpOAuthUtil;
 import com.designer.admin.system.model.entity.auth.SysOauthScope;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
@@ -47,7 +47,7 @@ public class OpenApiScopeGuard {
         if (matched == null) {
             throw new BizException(403, "接口未登记开放 Scope：" + path);
         }
-        Set<String> held = new HashSet<>(StpOauthUtil.getScopes());
+        Set<String> held = new HashSet<>(StpOAuthUtil.getScopes());
         if (!held.contains(matched.getScopeCode())) {
             throw new BizException(403, "缺少 Scope 授权：" + matched.getScopeCode());
         }

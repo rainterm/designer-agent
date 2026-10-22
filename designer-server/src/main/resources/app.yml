@@ -97,8 +97,8 @@ mybatis.db1:
   mappers:
     # 系统模块：mapper 按业务域拆分子包（mapper/rbac、mapper/auth ...）
     - "com.designer.admin.system.mapper.**.*"
-    # 其他模块：mapper 接口直接位于 mapper 包下
-    - "com.designer.admin.module.**.mapper.*"
+    # 业务模块：同样支持 mapper 下子包（如 module.agent.mapper.agent / provider ...）
+    - "com.designer.admin.module.**.mapper.**.*"
   configuration:
     mapUnderscoreToCamelCase: true
     # 开发期排查 SQL 时可打开：
@@ -316,6 +316,16 @@ designer:
     public-url-prefix: "/app-api/system/file/download/"
     # 本地存储默认根目录（相对进程工作目录或绝对路径）
     local-default-path: "./data/uploads"
+  agent:
+    # Solon AI Harness 工作区（影子空间 / skill 落盘）
+    workspace: "${AGENT_WORKSPACE:./data/agent-harness}"
+    # 智能体异步执行器（虚拟线程）：同时运行的 SSE / 工作流 / 索引进度任务上限
+    async:
+      max-concurrent: "${AGENT_ASYNC_MAX_CONCURRENT:64}"
+    milvus:
+      uri: "${MILVUS_URI:http://localhost:19530}"
+      token: "${MILVUS_TOKEN:}"
+      database: "${MILVUS_DATABASE:default}"
   sso:
     # 一次性登录票据有效期（秒）
     ticket-ttl: 60

@@ -2,7 +2,7 @@ package com.designer.admin.system.service.auth.impl;
 
 import com.designer.admin.common.exception.BizException;
 import com.designer.admin.framework.crypto.PasswordUtil;
-import com.designer.admin.framework.satoken.StpOauthUtil;
+import com.designer.admin.framework.satoken.StpOAuthUtil;
 import com.designer.admin.system.constant.Oauth2Consts;
 import com.designer.admin.system.model.entity.auth.SysOauthClient;
 import com.designer.admin.system.model.vo.auth.Oauth2TokenVO;
@@ -49,10 +49,10 @@ public class Oauth2TokenServiceImpl implements Oauth2TokenService {
         }
         int ttl = client.getAccessTokenTtl() == null
                 ? Oauth2Consts.DEFAULT_ACCESS_TOKEN_TTL_SECONDS : client.getAccessTokenTtl();
-        StpOauthUtil.login(client.getClientId(), granted, ttl);
+        StpOAuthUtil.login(client.getClientId(), granted, ttl);
 
         return Oauth2TokenVO.builder()
-                .accessToken(StpOauthUtil.getTokenValue())
+                .accessToken(StpOAuthUtil.getTokenValue())
                 .tokenType(Oauth2Consts.TOKEN_TYPE_BEARER)
                 .expiresIn((long) ttl)
                 .scope(String.join(" ", granted))

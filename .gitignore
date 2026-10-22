@@ -6,6 +6,7 @@ target/
 cp.txt
 .cp.txt
 data/uploads/
+data/agent-harness/
 
 # 前端
 node_modules/
